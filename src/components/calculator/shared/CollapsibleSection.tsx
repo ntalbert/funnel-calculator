@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface Props {
   id: string;
@@ -24,23 +25,37 @@ export function CollapsibleSection({ id, title, summary, isExpanded, onToggle, c
             <p className="text-xs text-gray-500 mt-0.5 truncate">{summary}</p>
           )}
         </div>
-        <svg
-          className={`w-4 h-4 text-gray-500 transition-transform duration-200 flex-shrink-0 ml-2 ${isExpanded ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+        <motion.span
+          className="flex-shrink-0 ml-2"
+          animate={{ rotate: isExpanded ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+          <svg
+            className="w-4 h-4 text-gray-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </motion.span>
       </button>
-      <div
-        id={`section-${id}`}
-        className={`overflow-hidden transition-all duration-200 ${isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
-      >
-        <div className="px-4 pb-4 space-y-3">
-          {children}
-        </div>
-      </div>
+      <AnimatePresence initial={false}>
+        {isExpanded && (
+          <motion.div
+            id={`section-${id}`}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div className="px-4 pb-4 space-y-3">
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

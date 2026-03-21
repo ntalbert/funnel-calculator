@@ -44,6 +44,35 @@ export function AdvancedSection() {
         step={0.05}
       />
 
+      <NumberInput
+        label="Quarterly Onboarding Cap"
+        value={advanced.quarterlyOnboardingCap}
+        onChange={(v) => dispatch({ type: 'SET_ADVANCED', payload: { quarterlyOnboardingCap: Math.round(v) } })}
+        tooltip={TOOLTIPS.onboardingCap}
+        suffix="accts/qtr"
+        min={100}
+        max={10000}
+        step={50}
+      />
+
+      {(() => {
+        const cap = advanced.quarterlyOnboardingCap;
+        const totalAccounts = state.inputs.cohorts.reduce((s, c) => s + c.totalAccounts, 0);
+        if (totalAccounts > cap * simulationQuarters) {
+          const activatable = cap * simulationQuarters;
+          return (
+            <p className="text-[10px] text-amber-400 leading-tight">
+              Only {activatable.toLocaleString()} of {totalAccounts.toLocaleString()} accounts can be activated within the {simulationQuarters}-quarter horizon.
+            </p>
+          );
+        }
+        return null;
+      })()}
+
+      <p className="text-[10px] text-gray-500 leading-tight">
+        Accounts exceeding the quarterly cap are queued for subsequent quarters. Each batch starts its own lead generation cycle from its activation date.
+      </p>
+
       <div className="space-y-1">
         <label className="text-xs font-medium text-gray-300">Model Horizon</label>
         <select
@@ -72,7 +101,7 @@ export function AdvancedSection() {
             value={state.inputs.budget.frequencyConfig.tierMultipliers.new}
             onChange={(v) => {
               const tm = { ...state.inputs.budget.frequencyConfig.tierMultipliers, new: v };
-              dispatch({ type: 'SET_FREQUENCY', payload: { tierMultipliers: tm } as any });
+              dispatch({ type: 'SET_FREQUENCY', payload: { tierMultipliers: tm } });
             }}
             tooltip={TOOLTIPS.tierMultiplierNew}
             suffix="x"
@@ -85,7 +114,7 @@ export function AdvancedSection() {
             value={state.inputs.budget.frequencyConfig.tierMultipliers.inProgress}
             onChange={(v) => {
               const tm = { ...state.inputs.budget.frequencyConfig.tierMultipliers, inProgress: v };
-              dispatch({ type: 'SET_FREQUENCY', payload: { tierMultipliers: tm } as any });
+              dispatch({ type: 'SET_FREQUENCY', payload: { tierMultipliers: tm } });
             }}
             tooltip={TOOLTIPS.tierMultiplierInProgress}
             suffix="x"
@@ -98,7 +127,7 @@ export function AdvancedSection() {
             value={state.inputs.budget.frequencyConfig.tierMultipliers.pastLead}
             onChange={(v) => {
               const tm = { ...state.inputs.budget.frequencyConfig.tierMultipliers, pastLead: v };
-              dispatch({ type: 'SET_FREQUENCY', payload: { tierMultipliers: tm } as any });
+              dispatch({ type: 'SET_FREQUENCY', payload: { tierMultipliers: tm } });
             }}
             tooltip={TOOLTIPS.tierMultiplierPastLead}
             suffix="x"

@@ -8,14 +8,32 @@ import type {
   FrequencyConfig,
   VelocityDistribution,
 } from './types';
+import type { SolverValues, LockState, LockPreset } from './solver-types';
+
+// --- Frequency Boost Constants ---
+
+export const FREQUENCY_BOOST_CONSTANTS = {
+  peakFrequency: 20,         // touches/month where boost maxes out
+  maxConversionBoost: 0.25,  // +25% to Lead→MQL and MQL→Opp at peak
+  maxVelocityShift: 0.30,    // 30% interpolation toward front-loaded at peak
+  belowBaselinePenalty: 0.10, // -10% conversion rate floor when frequency is near zero
+};
 
 // --- Campaign Profiles (PRD Section 5) ---
 
+// Cold profile IDs for filtering
+export const COLD_PROFILE_IDS: CampaignProfileId[] = ['abm', 'competitive', 'inbound'];
+export const WARM_PROFILE_IDS: CampaignProfileId[] = ['partner', 'founder', 'existing_pipeline'];
+
 export const CAMPAIGN_PROFILES: Record<CampaignProfileId, CampaignProfile> = {
+  // --- Cold Profiles (full funnel: Account → Lead → MQL → Opp → Close) ---
   abm: {
     id: 'abm',
     label: 'ABM',
     description: 'Named account targeting, 1:1 or 1:few campaigns',
+    category: 'cold',
+    funnelEntry: 'account',
+    chartColor: '#3B82F6',
     conversionRates: {
       accountToLead: 0.15,
       leadToMQL: 0.60,
@@ -36,11 +54,15 @@ export const CAMPAIGN_PROFILES: Record<CampaignProfileId, CampaignProfile> = {
     maxVelocityImprovement: 0.30,
     contentCostMultiplier: 1.0,
     typicalUseCase: 'Named account targeting, 1:1 or 1:few campaigns',
+    defaultOnboardingCap: 750,
   },
   competitive: {
     id: 'competitive',
     label: 'Competitive / Technographic',
     description: 'Targeting competitor install base via technographic signals',
+    category: 'cold',
+    funnelEntry: 'account',
+    chartColor: '#06B6D4',
     conversionRates: {
       accountToLead: 0.12,
       leadToMQL: 0.55,
@@ -61,11 +83,15 @@ export const CAMPAIGN_PROFILES: Record<CampaignProfileId, CampaignProfile> = {
     maxVelocityImprovement: 0.25,
     contentCostMultiplier: 1.0,
     typicalUseCase: 'Targeting competitor install base via technographic signals',
+    defaultOnboardingCap: 1000,
   },
   inbound: {
     id: 'inbound',
     label: 'Inbound / Content',
     description: 'Content marketing, SEO, webinars, paid search',
+    category: 'cold',
+    funnelEntry: 'account',
+    chartColor: '#10B981',
     conversionRates: {
       accountToLead: 0.20,
       leadToMQL: 0.50,
@@ -86,6 +112,100 @@ export const CAMPAIGN_PROFILES: Record<CampaignProfileId, CampaignProfile> = {
     maxVelocityImprovement: 0.20,
     contentCostMultiplier: 1.18,
     typicalUseCase: 'Content marketing, SEO, webinars, paid search',
+    defaultOnboardingCap: 1500,
+  },
+
+  // --- Warm Profiles (high-conversion or pipeline-entry) ---
+  partner: {
+    id: 'partner',
+    label: 'Partner Leads',
+    description: 'Partner-referred warm leads with high middle-funnel conversion',
+    category: 'warm',
+    funnelEntry: 'account',
+    chartColor: '#F59E0B',
+    conversionRates: {
+      accountToLead: 0.75,
+      leadToMQL: 1.00,
+      mqlToOpp: 1.00,
+      oppToClose: 0.50,
+    },
+    velocityDistribution: {
+      new:         [0.50, 0.30, 0.15, 0.05],
+      maturing:    [0,    0.50, 0.35, 0.15],
+      established: [0,    0,    0.60, 0.40],
+      mature:      [0,    0,    0,    1.00],
+    },
+    defaultCPL: 200,
+    defaultFrequency: 2,
+    defaultCostPerTouch: 1.00,
+    defaultASP: 100000,
+    defaultSalesVelocity: 90,
+    maxVelocityImprovement: 0.15,
+    contentCostMultiplier: 0.5,
+    typicalUseCase: 'Partner-referred leads with pre-existing vendor relationship',
+    defaultOnboardingCap: 100,
+    accountRange: { min: 5, max: 200, warnMax: 100 },
+  },
+  founder: {
+    id: 'founder',
+    label: 'Founder-Led',
+    description: 'Founder-sourced deals through personal network and outreach',
+    category: 'warm',
+    funnelEntry: 'account',
+    chartColor: '#F97316',
+    conversionRates: {
+      accountToLead: 0.90,
+      leadToMQL: 1.00,
+      mqlToOpp: 1.00,
+      oppToClose: 0.40,
+    },
+    velocityDistribution: {
+      new:         [0.60, 0.25, 0.10, 0.05],
+      maturing:    [0,    0.60, 0.30, 0.10],
+      established: [0,    0,    0.70, 0.30],
+      mature:      [0,    0,    0,    1.00],
+    },
+    defaultCPL: 100,
+    defaultFrequency: 1,
+    defaultCostPerTouch: 0.50,
+    defaultASP: 100000,
+    defaultSalesVelocity: 60,
+    maxVelocityImprovement: 0.10,
+    contentCostMultiplier: 0.3,
+    typicalUseCase: 'Founder-sourced deals through personal network and direct outreach',
+    defaultOnboardingCap: 50,
+    accountRange: { min: 3, max: 100, warnMax: 50 },
+  },
+  existing_pipeline: {
+    id: 'existing_pipeline',
+    label: 'Existing Pipeline',
+    description: 'Opportunities already in your pipeline, entering at the Opp stage',
+    category: 'warm',
+    funnelEntry: 'opportunity',
+    chartColor: '#EF4444',
+    conversionRates: {
+      accountToLead: 1.00,   // placeholder — bypassed
+      leadToMQL: 1.00,       // placeholder — bypassed
+      mqlToOpp: 1.00,        // placeholder — bypassed
+      oppToClose: 0.35,
+    },
+    velocityDistribution: {
+      new:         [0.40, 0.35, 0.15, 0.10],
+      maturing:    [0,    0.45, 0.35, 0.20],
+      established: [0,    0,    0.50, 0.50],
+      mature:      [0,    0,    0,    1.00],
+    },
+    defaultCPL: 0,
+    defaultFrequency: 0,
+    defaultCostPerTouch: 0,
+    defaultASP: 100000,
+    defaultSalesVelocity: 120,
+    maxVelocityImprovement: 0.10,
+    contentCostMultiplier: 0,
+    typicalUseCase: 'Existing qualified opportunities already in your sales pipeline',
+    defaultOnboardingCap: 500,
+    accountLabel: 'Existing Opportunities',
+    accountRange: { min: 1, max: 500, warnMax: 200 },
   },
 };
 
@@ -113,6 +233,7 @@ export const DEFAULT_ADVANCED: AdvancedConfig = {
   quarterlyDropoutRate: 0.15,
   salesVelocityDays: 75,
   maxVelocityImprovement: 0.20,
+  quarterlyOnboardingCap: 750,
 };
 
 export const DEFAULT_GOALS: GoalsConfig = {
@@ -145,6 +266,86 @@ export const PIPELINE_BENCHMARKS = {
   'growth': { ratio: 4.0, label: 'Growth Stage', description: 'Growth-stage companies with proven product-market fit target 4:1. More efficient conversion offsets lower required pipeline multiple.' },
   'high-growth': { ratio: 3.0, label: 'High Growth / Scale', description: 'At scale, higher close rates and larger deal sizes mean 3:1 pipeline coverage is sufficient. Below 3:1 signals pipeline risk.' },
 } as const;
+
+// --- Solver Defaults ---
+
+export const DEFAULT_SOLVER_VALUES: SolverValues = {
+  revenueGoal: 6_000_000,
+  asp: 100_000,
+  accounts: 0, // computed by solver on init
+  totalBudget: 0, // computed by solver on init
+  accountToLead: 0.15,
+  leadToMQL: 0.60,
+  mqlToOpp: 0.27,
+  oppToClose: 0.20,
+  blendedCPL: 500,
+  timeHorizonQuarters: 8,
+  monthlyFrequency: 2,
+  costPerTouch: 15,
+  softwareCostPerQuarter: 10_000,
+};
+
+export const DEFAULT_LOCK_STATE: LockState = {
+  revenueGoal: true,
+  asp: true,
+  accounts: false,       // computed
+  totalBudget: false,    // computed
+  accountToLead: true,
+  leadToMQL: true,
+  mqlToOpp: true,
+  oppToClose: true,
+  blendedCPL: true,
+  timeHorizonQuarters: true,
+  monthlyFrequency: true,
+  costPerTouch: true,
+  softwareCostPerQuarter: true,
+};
+
+export const LOCK_PRESETS: LockPreset[] = [
+  {
+    id: 'forward',
+    label: 'Forward Default',
+    locks: { ...DEFAULT_LOCK_STATE },
+  },
+  {
+    id: 'reverse',
+    label: 'Reverse Default',
+    locks: {
+      revenueGoal: true,
+      asp: true,
+      accounts: false,
+      totalBudget: true,
+      accountToLead: false,
+      leadToMQL: false,
+      mqlToOpp: false,
+      oppToClose: false,
+      blendedCPL: true,
+      timeHorizonQuarters: true,
+      monthlyFrequency: true,
+      costPerTouch: true,
+      softwareCostPerQuarter: true,
+    },
+  },
+  {
+    id: 'minimal',
+    label: 'All Unlocked',
+    locks: {
+      revenueGoal: true,
+      asp: true,
+      accounts: false,
+      totalBudget: false,
+      accountToLead: false,
+      leadToMQL: false,
+      mqlToOpp: false,
+      oppToClose: false,
+      blendedCPL: false,
+      timeHorizonQuarters: true,
+      monthlyFrequency: false,
+      costPerTouch: false,
+      softwareCostPerQuarter: false,
+    },
+  },
+];
 
 // --- Default Scenario Inputs ---
 
@@ -238,5 +439,7 @@ export const TOOLTIPS: Record<string, string> = {
   aspAdjustment: "Conversion rates and sales velocity are automatically scaled based on your Average Selling Price. Smaller deals close faster and at higher rates; larger deals take longer and close less frequently. This reflects empirical data across 847+ B2B SaaS companies. You can override any adjusted value in the Advanced panel.",
   companyStage: "Your company stage determines the recommended pipeline-to-marketing ratio. Series A companies need 5:1 because close rates are still being proven. Growth companies target 4:1 with more efficient conversion. High-growth/scale companies can operate at 3:1 with proven sales engines.",
   pipeline: "Total pipeline value = opportunities created \u00D7 average selling price. This is the dollar value of all qualified opportunities generated by your marketing investment, regardless of whether they close. Pipeline is the leading indicator of future revenue.",
+  onboardingCap: "Maximum new accounts activated per quarter. ABM teams can typically onboard 500\u20131,500 accounts per quarter depending on team size and campaign complexity (ITSMA/Forrester benchmarks). Accounts beyond this cap are queued for activation in subsequent quarters, each batch starting its own lead velocity curve from its activation date. Set higher for programmatic campaigns, lower for high-touch ABM.",
   pipelineRatio: "Pipeline generated per dollar of marketing investment. This ratio indicates whether your marketing engine is generating enough pipeline to sustain growth. The benchmark depends on company stage: Series A needs 5:1, Growth needs 4:1, High Growth needs 3:1.",
+  frequencyBoost: "Higher monthly frequency improves Lead\u2192MQL and MQL\u2192Opp conversion rates (up to +25% at 20 touches/month) and pulls leads forward in the timeline. Beyond 20 touches/month, returns diminish due to audience fatigue. The boost is relative to each campaign profile\u2019s default frequency.",
 };

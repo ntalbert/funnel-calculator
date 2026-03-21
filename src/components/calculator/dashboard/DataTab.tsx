@@ -1,14 +1,8 @@
 import { useCalculator } from '../state/context';
+import { formatNumPrecise, formatCurrencyFull } from '../shared/formatters';
+import type { QuarterlyOutput } from '../engine/types';
 
-function formatNum(n: number): string {
-  return n < 1 && n > 0 ? n.toFixed(2) : n.toFixed(0);
-}
-
-function formatCurrency(n: number): string {
-  return '$' + Math.round(n).toLocaleString();
-}
-
-function exportCSV(quarterly: any[]) {
+function exportCSV(quarterly: QuarterlyOutput[]) {
   const headers = ['Quarter', 'Leads', 'MQLs', 'Opportunities', 'Pipeline', 'Closed Won', 'Revenue', 'Frequency Cost', 'CPL Cost', 'Software', 'Agency', 'Total Cost', 'Cum. Revenue', 'Cum. Cost'];
   const rows = quarterly.map(q => [
     q.quarterLabel,
@@ -39,7 +33,10 @@ function exportCSV(quarterly: any[]) {
 
 export function DataTab() {
   const { state } = useCalculator();
-  const { quarterly } = state.outputs;
+
+  const outputs = state.outputs;
+
+  const { quarterly } = outputs;
 
   return (
     <div className="space-y-3">
@@ -75,33 +72,33 @@ export function DataTab() {
             {quarterly.map((q, i) => (
               <tr key={q.quarter} className={`border-b border-gray-800/50 ${i % 2 === 0 ? 'bg-black' : 'bg-gray-900/50'}`}>
                 <td className="px-3 py-2 font-medium text-white sticky left-0 bg-inherit z-10">{q.quarterLabel}</td>
-                <td className="text-right px-3 py-2 text-gray-300">{formatNum(q.leads)}</td>
-                <td className="text-right px-3 py-2 text-gray-300">{formatNum(q.mqls)}</td>
-                <td className="text-right px-3 py-2 text-gray-300">{formatNum(q.opportunities)}</td>
-                <td className="text-right px-3 py-2 text-gray-300">{formatCurrency(q.pipeline)}</td>
-                <td className="text-right px-3 py-2 text-gray-300">{formatNum(q.closedWon)}</td>
-                <td className="text-right px-3 py-2 text-gray-300">{formatCurrency(q.revenue)}</td>
-                <td className="text-right px-3 py-2 text-gray-500">{formatCurrency(q.frequencyCost)}</td>
-                <td className="text-right px-3 py-2 text-gray-500">{formatCurrency(q.cplCost)}</td>
-                <td className="text-right px-3 py-2 text-gray-500">{formatCurrency(q.softwareCost)}</td>
-                <td className="text-right px-3 py-2 text-gray-500">{formatCurrency(q.agencyCost)}</td>
-                <td className="text-right px-3 py-2 font-medium text-white">{formatCurrency(q.totalCost)}</td>
+                <td className="text-right px-3 py-2 text-gray-300">{formatNumPrecise(q.leads)}</td>
+                <td className="text-right px-3 py-2 text-gray-300">{formatNumPrecise(q.mqls)}</td>
+                <td className="text-right px-3 py-2 text-gray-300">{formatNumPrecise(q.opportunities)}</td>
+                <td className="text-right px-3 py-2 text-gray-300">{formatCurrencyFull(q.pipeline)}</td>
+                <td className="text-right px-3 py-2 text-gray-300">{formatNumPrecise(q.closedWon)}</td>
+                <td className="text-right px-3 py-2 text-gray-300">{formatCurrencyFull(q.revenue)}</td>
+                <td className="text-right px-3 py-2 text-gray-500">{formatCurrencyFull(q.frequencyCost)}</td>
+                <td className="text-right px-3 py-2 text-gray-500">{formatCurrencyFull(q.cplCost)}</td>
+                <td className="text-right px-3 py-2 text-gray-500">{formatCurrencyFull(q.softwareCost)}</td>
+                <td className="text-right px-3 py-2 text-gray-500">{formatCurrencyFull(q.agencyCost)}</td>
+                <td className="text-right px-3 py-2 font-medium text-white">{formatCurrencyFull(q.totalCost)}</td>
               </tr>
             ))}
             {/* Totals row */}
             <tr className="bg-gray-800 font-semibold border-t-2 border-gray-700">
               <td className="px-3 py-2 text-white sticky left-0 bg-gray-800 z-10">Total</td>
-              <td className="text-right px-3 py-2 text-white">{formatNum(quarterly.reduce((a, q) => a + q.leads, 0))}</td>
-              <td className="text-right px-3 py-2 text-white">{formatNum(quarterly.reduce((a, q) => a + q.mqls, 0))}</td>
-              <td className="text-right px-3 py-2 text-white">{formatNum(quarterly.reduce((a, q) => a + q.opportunities, 0))}</td>
-              <td className="text-right px-3 py-2 text-white">{formatCurrency(quarterly.reduce((a, q) => a + q.pipeline, 0))}</td>
-              <td className="text-right px-3 py-2 text-white">{formatNum(quarterly.reduce((a, q) => a + q.closedWon, 0))}</td>
-              <td className="text-right px-3 py-2 text-white">{formatCurrency(quarterly.reduce((a, q) => a + q.revenue, 0))}</td>
-              <td className="text-right px-3 py-2 text-gray-500">{formatCurrency(quarterly.reduce((a, q) => a + q.frequencyCost, 0))}</td>
-              <td className="text-right px-3 py-2 text-gray-500">{formatCurrency(quarterly.reduce((a, q) => a + q.cplCost, 0))}</td>
-              <td className="text-right px-3 py-2 text-gray-500">{formatCurrency(quarterly.reduce((a, q) => a + q.softwareCost, 0))}</td>
-              <td className="text-right px-3 py-2 text-gray-500">{formatCurrency(quarterly.reduce((a, q) => a + q.agencyCost, 0))}</td>
-              <td className="text-right px-3 py-2 text-white">{formatCurrency(quarterly.reduce((a, q) => a + q.totalCost, 0))}</td>
+              <td className="text-right px-3 py-2 text-white">{formatNumPrecise(quarterly.reduce((a, q) => a + q.leads, 0))}</td>
+              <td className="text-right px-3 py-2 text-white">{formatNumPrecise(quarterly.reduce((a, q) => a + q.mqls, 0))}</td>
+              <td className="text-right px-3 py-2 text-white">{formatNumPrecise(quarterly.reduce((a, q) => a + q.opportunities, 0))}</td>
+              <td className="text-right px-3 py-2 text-white">{formatCurrencyFull(quarterly.reduce((a, q) => a + q.pipeline, 0))}</td>
+              <td className="text-right px-3 py-2 text-white">{formatNumPrecise(quarterly.reduce((a, q) => a + q.closedWon, 0))}</td>
+              <td className="text-right px-3 py-2 text-white">{formatCurrencyFull(quarterly.reduce((a, q) => a + q.revenue, 0))}</td>
+              <td className="text-right px-3 py-2 text-gray-500">{formatCurrencyFull(quarterly.reduce((a, q) => a + q.frequencyCost, 0))}</td>
+              <td className="text-right px-3 py-2 text-gray-500">{formatCurrencyFull(quarterly.reduce((a, q) => a + q.cplCost, 0))}</td>
+              <td className="text-right px-3 py-2 text-gray-500">{formatCurrencyFull(quarterly.reduce((a, q) => a + q.softwareCost, 0))}</td>
+              <td className="text-right px-3 py-2 text-gray-500">{formatCurrencyFull(quarterly.reduce((a, q) => a + q.agencyCost, 0))}</td>
+              <td className="text-right px-3 py-2 text-white">{formatCurrencyFull(quarterly.reduce((a, q) => a + q.totalCost, 0))}</td>
             </tr>
           </tbody>
         </table>

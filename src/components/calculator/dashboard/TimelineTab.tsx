@@ -1,5 +1,8 @@
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend, ResponsiveContainer, Line, ComposedChart, ReferenceArea } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend, ResponsiveContainer, Line, ComposedChart, ReferenceArea, ReferenceLine } from 'recharts';
 import { useCalculator } from '../state/context';
+import { CAMPAIGN_PROFILES, getQuarterLabel } from '../engine/defaults';
+import { formatNum, formatCurrency } from '../shared/formatters';
+import { CHART_TOOLTIP, AXIS_TICK, LEGEND_STYLE } from '../shared/chartConstants';
 
 const COLORS = {
   leads: '#3B82F6',      // blue
@@ -9,26 +12,16 @@ const COLORS = {
   revenue: '#EC4899',     // pink (line)
 };
 
-const CHART_TOOLTIP = { fontSize: 11, borderRadius: 8, border: '1px solid #374151', backgroundColor: '#1f2937', color: '#e5e7eb' };
-const AXIS_TICK = { fontSize: 10, fill: '#9ca3af' };
-
-function formatNum(n: number): string {
-  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-  return n.toFixed(0);
-}
-
-function formatCurrency(n: number): string {
-  if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
-  if (n >= 1000) return `$${(n / 1000).toFixed(0)}K`;
-  return `$${n.toFixed(0)}`;
-}
-
 export function TimelineTab() {
   const { state } = useCalculator();
-  const { quarterly } = state.outputs;
-  const { summary } = state.outputs;
+
+  const outputs = state.outputs;
+
+  const { quarterly } = outputs;
+  const { summary } = outputs;
   const { arrGoal } = state.inputs.goals;
+
+  const { startYear, startQ, cohorts: cohortInputs } = state.inputs;
 
   const chartData = quarterly.map(q => ({
     name: q.quarterLabel,
@@ -46,8 +39,34 @@ export function TimelineTab() {
     ? quarterly[firstRevIdx].quarterLabel
     : null;
 
+  // Cohort start markers — deduplicated by quarter, skip Q0 (first cohort is implicit)
+  const cohortStartMarkers = cohortInputs
+    .filter(c => c.startQuarter > 0)
+    .map(c => ({
+      quarterLabel: getQuarterLabel(c.startQuarter, startYear, startQ),
+      cohortName: c.name,
+      profileLabel: CAMPAIGN_PROFILES[c.profileId].label,
+      chartColor: CAMPAIGN_PROFILES[c.profileId].chartColor,
+    }))
+    // Deduplicate by quarter (if multiple cohorts start same quarter, combine names)
+    .reduce<Array<{ quarterLabel: string; label: string; color: string }>>((acc, m) => {
+      const existing = acc.find(a => a.quarterLabel === m.quarterLabel);
+      if (existing) {
+        existing.label += `, ${m.cohortName}`;
+      } else {
+        acc.push({ quarterLabel: m.quarterLabel, label: `${m.cohortName} starts`, color: m.chartColor });
+      }
+      return acc;
+    }, []);
+
   return (
     <div className="space-y-4">
+      {state.solver.result.feasibility === 'overconstrained' && (
+        <div className="rounded-lg border border-amber-800 bg-amber-900/20 px-3 py-2">
+          <p className="text-[11px] text-amber-300">Some constraints are in tension — results use bounded values</p>
+        </div>
+      )}
+
       {/* Funnel Volume Chart */}
       <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
         <h3 className="text-sm font-semibold text-white mb-3">Funnel Volume by Quarter</h3>
@@ -59,9 +78,9 @@ export function TimelineTab() {
               <YAxis tick={AXIS_TICK} tickFormatter={formatNum} />
               <RTooltip
                 contentStyle={CHART_TOOLTIP}
-                formatter={(value: number, name: string) => [formatNum(value), name]}
+                formatter={(value: any, name: any) => [formatNum(Number(value)), String(name)]}
               />
-              <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af' }} />
+              <Legend wrapperStyle={LEGEND_STYLE} />
               {/* Investment Period Shading (PRD C.2) */}
               {investmentPeriodStart && investmentPeriodEnd && firstRevIdx !== null && firstRevIdx > 0 && (
                 <ReferenceArea
@@ -72,6 +91,23 @@ export function TimelineTab() {
                   label={{ value: 'Investment Period', position: 'insideTop', fontSize: 9, fill: '#fbbf24' }}
                 />
               )}
+              {/* Cohort start markers */}
+              {cohortStartMarkers.map(m => (
+                <ReferenceLine
+                  key={m.quarterLabel}
+                  x={m.quarterLabel}
+                  stroke={m.color}
+                  strokeDasharray="4 3"
+                  strokeWidth={1.5}
+                  label={{
+                    value: m.label,
+                    position: 'insideTopRight',
+                    fontSize: 9,
+                    fill: m.color,
+                    offset: 8,
+                  }}
+                />
+              ))}
               <Area type="monotone" dataKey="Leads" stackId="1" fill={COLORS.leads} stroke={COLORS.leads} fillOpacity={0.6} />
               <Area type="monotone" dataKey="MQLs" stackId="1" fill={COLORS.mqls} stroke={COLORS.mqls} fillOpacity={0.6} />
               <Area type="monotone" dataKey="Opportunities" stackId="1" fill={COLORS.opportunities} stroke={COLORS.opportunities} fillOpacity={0.6} />
@@ -92,7 +128,7 @@ export function TimelineTab() {
               <YAxis tick={AXIS_TICK} tickFormatter={formatCurrency} />
               <RTooltip
                 contentStyle={CHART_TOOLTIP}
-                formatter={(value: number) => [formatCurrency(value)]}
+                formatter={(value: any) => [formatCurrency(Number(value))]}
               />
               <Area type="monotone" dataKey="Cum. Revenue" fill={COLORS.revenue} stroke={COLORS.revenue} fillOpacity={0.2} />
               {/* Goal reference line */}

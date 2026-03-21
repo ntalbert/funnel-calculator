@@ -86,8 +86,10 @@ function getOverallUnitEconHealth(outputs: CalculatorOutputs): TrafficLightStatu
 }
 
 export function analyzeTimeline(inputs: CalculatorInputs, outputs: CalculatorOutputs): TimelineAnalysis {
-  // Use the first cohort's profile as the primary benchmark
-  const primaryProfile = CAMPAIGN_PROFILES[inputs.cohorts[0]?.profileId || 'abm'];
+  // Prefer the first cold cohort for stage benchmarks (warm profiles have trivially high rates)
+  const coldCohort = inputs.cohorts.find(c => CAMPAIGN_PROFILES[c.profileId].category === 'cold');
+  const refCohort = coldCohort || inputs.cohorts[0];
+  const primaryProfile = CAMPAIGN_PROFILES[refCohort?.profileId || 'abm'];
   const rates = primaryProfile.conversionRates;
 
   const stageConfigs: Array<{
@@ -315,3 +317,4 @@ export function analyzeData(inputs: CalculatorInputs, outputs: CalculatorOutputs
 
   return { totalLeads, totalDeals, avgQuarterlyRevenue, peakQuarter, peakRevenue, quarterOverQuarterGrowth, keyInsight, recommendations: recommendations.slice(0, 3) };
 }
+

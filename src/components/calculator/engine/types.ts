@@ -1,5 +1,11 @@
 // Campaign profile identifiers
-export type CampaignProfileId = 'abm' | 'competitive' | 'inbound';
+export type CampaignProfileId = 'abm' | 'competitive' | 'inbound' | 'partner' | 'founder' | 'existing_pipeline';
+
+// Campaign profile category
+export type ProfileCategory = 'cold' | 'warm';
+
+// Where in the funnel a profile enters
+export type FunnelEntry = 'account' | 'opportunity';
 
 // Velocity distribution across Q+1 through Q+4 for each cohort age
 export interface VelocityDistribution {
@@ -54,6 +60,7 @@ export interface AdvancedConfig {
   quarterlyDropoutRate: number;   // default 0.15
   salesVelocityDays: number;     // default 167
   maxVelocityImprovement: number; // default 0.30
+  quarterlyOnboardingCap: number; // max new accounts activated per quarter (default 750)
 }
 
 // Company stage for pipeline benchmarks
@@ -187,6 +194,8 @@ export interface Scenario {
   id: string;
   name: string;
   inputs: CalculatorInputs;
+  solverValues?: import('./solver-types').SolverValues;
+  solverLocks?: import('./solver-types').LockState;
   createdAt: number;
   updatedAt: number;
 }
@@ -244,6 +253,9 @@ export interface CampaignProfile {
   id: CampaignProfileId;
   label: string;
   description: string;
+  category: ProfileCategory;        // 'cold' = full funnel, 'warm' = high-conversion or pipeline
+  funnelEntry: FunnelEntry;          // 'account' = full funnel, 'opportunity' = skips lead stages
+  chartColor: string;                // profile-specific color for charts
   conversionRates: ConversionRates;
   velocityDistribution: VelocityDistribution;
   defaultCPL: number;
@@ -252,6 +264,9 @@ export interface CampaignProfile {
   defaultASP: number;
   defaultSalesVelocity: number;
   maxVelocityImprovement: number;
-  contentCostMultiplier: number; // 1.0 = baseline, 1.18 = 18% premium for inbound
+  contentCostMultiplier: number;     // 1.0 = baseline, 1.18 = 18% premium for inbound
   typicalUseCase: string;
+  defaultOnboardingCap: number;      // max accounts activatable per quarter for this profile
+  accountLabel?: string;             // custom label (e.g., "Existing Opportunities")
+  accountRange?: { min: number; max: number; warnMax: number };
 }

@@ -491,3 +491,4 @@ export function addBudgetUnitEconPage(doc: jsPDF, summary: SummaryMetrics): void
     });
   }
 }
+

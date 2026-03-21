@@ -2,6 +2,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Legend
 import { useCalculator } from '../state/context';
 import { Tooltip } from '../shared/Tooltip';
 import { TOOLTIPS, UNIT_ECONOMICS_THRESHOLDS } from '../engine/defaults';
+import { formatCurrency } from '../shared/formatters';
+import { CHART_TOOLTIP, AXIS_TICK, LEGEND_STYLE } from '../shared/chartConstants';
 import type { TrafficLightStatus } from '../engine/types';
 
 const COLORS = {
@@ -12,15 +14,6 @@ const COLORS = {
   cumCost: '#DC2626',    // red line
   cumRevenue: '#10B981', // green line
 };
-
-const CHART_TOOLTIP = { fontSize: 11, borderRadius: 8, border: '1px solid #374151', backgroundColor: '#1f2937', color: '#e5e7eb' };
-const AXIS_TICK = { fontSize: 10, fill: '#9ca3af' };
-
-function formatCurrency(n: number): string {
-  if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
-  if (n >= 1000) return `$${(n / 1000).toFixed(0)}K`;
-  return `$${n.toFixed(0)}`;
-}
 
 function getUnitEconStatus(metric: string, value: number): TrafficLightStatus {
   const t = UNIT_ECONOMICS_THRESHOLDS;
@@ -52,8 +45,11 @@ const STATUS_COLORS: Record<TrafficLightStatus, string> = {
 
 export function BudgetTab() {
   const { state } = useCalculator();
-  const { quarterly } = state.outputs;
-  const { summary } = state.outputs;
+
+  const outputs = state.outputs;
+
+  const { quarterly } = outputs;
+  const { summary } = outputs;
   const { unitEconomics } = summary;
 
   const budgetData = quarterly.map(q => ({
@@ -74,7 +70,9 @@ export function BudgetTab() {
     <div className="space-y-4">
       {/* Quarterly Budget Breakdown */}
       <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
-        <h3 className="text-sm font-semibold text-white mb-3">Quarterly Budget Breakdown</h3>
+        <h3 className="text-sm font-semibold text-white mb-3">
+          Quarterly Budget Breakdown
+        </h3>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={budgetData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
@@ -83,9 +81,9 @@ export function BudgetTab() {
               <YAxis tick={AXIS_TICK} tickFormatter={formatCurrency} />
               <RTooltip
                 contentStyle={CHART_TOOLTIP}
-                formatter={(value: number) => [formatCurrency(value)]}
+                formatter={(value: any) => [formatCurrency(Number(value))]}
               />
-              <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af' }} />
+              <Legend wrapperStyle={LEGEND_STYLE} />
               <Bar dataKey="Frequency Targeting" stackId="a" fill={COLORS.frequency} />
               <Bar dataKey="CPL Lead Gen" stackId="a" fill={COLORS.cpl} />
               <Bar dataKey="Software" stackId="a" fill={COLORS.software} />
@@ -106,9 +104,9 @@ export function BudgetTab() {
               <YAxis tick={AXIS_TICK} tickFormatter={formatCurrency} />
               <RTooltip
                 contentStyle={CHART_TOOLTIP}
-                formatter={(value: number) => [formatCurrency(value)]}
+                formatter={(value: any) => [formatCurrency(Number(value))]}
               />
-              <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af' }} />
+              <Legend wrapperStyle={LEGEND_STYLE} />
               <Line type="monotone" dataKey="Cumulative Cost" stroke={COLORS.cumCost} strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="Cumulative Revenue" stroke={COLORS.cumRevenue} strokeWidth={2} dot={false} />
             </ComposedChart>

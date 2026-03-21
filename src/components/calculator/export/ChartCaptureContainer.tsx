@@ -1,5 +1,7 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Legend, BarChart, Bar, ComposedChart, Line, ReferenceArea } from 'recharts';
 import { useCalculator } from '../state/context';
+import { CAMPAIGN_PROFILES } from '../engine/defaults';
+import { formatNum, formatCurrency } from '../shared/formatters';
 
 // Light-theme axis styles for PDF
 const AXIS_TICK = { fontSize: 10, fill: '#374151' };
@@ -22,24 +24,10 @@ const BUDGET_COLORS = {
   cumRevenue: '#10B981',
 };
 
-const COHORT_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#6366F1'];
-
-function formatNum(n: number): string {
-  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-  return n.toFixed(0);
-}
-
-function formatCurrency(n: number): string {
-  if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
-  if (n >= 1000) return `$${(n / 1000).toFixed(0)}K`;
-  return `$${n.toFixed(0)}`;
-}
-
 export function ChartCaptureContainer() {
   const { state } = useCalculator();
   const { quarterly, cohorts: cohortOutputs, summary } = state.outputs;
-  const { arrGoal } = state.inputs.goals;
+  const arrGoal = state.inputs.goals.arrGoal;
 
   if (!state.ui.showEmailCapture) return null;
 
@@ -155,8 +143,8 @@ export function ChartCaptureContainer() {
             <XAxis dataKey="name" tick={AXIS_TICK} />
             <YAxis tick={AXIS_TICK} tickFormatter={formatNum} />
             <Legend wrapperStyle={LEGEND_STYLE} />
-            {cohortOutputs.map((co, i) => (
-              <Bar key={co.cohortId} dataKey={co.cohortName} stackId="a" fill={COHORT_COLORS[i % COHORT_COLORS.length]} isAnimationActive={false} />
+            {cohortOutputs.map((co) => (
+              <Bar key={co.cohortId} dataKey={co.cohortName} stackId="a" fill={CAMPAIGN_PROFILES[co.profileId].chartColor} isAnimationActive={false} />
             ))}
           </BarChart>
         </div>

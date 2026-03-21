@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { motion } from 'motion/react';
 import { Tooltip } from './Tooltip';
 import type { ValidationResult } from '../engine/types';
 
@@ -20,6 +22,7 @@ export function NumberInput({
   label, value, onChange, tooltip, prefix, suffix,
   min, max, step = 1, validation, disabled, isPercent,
 }: Props) {
+  const [isFocused, setIsFocused] = useState(false);
   const displayValue = isPercent ? Math.round(value * 100) : value;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,7 +44,16 @@ export function NumberInput({
         {label}
         {tooltip && <Tooltip content={tooltip} />}
       </label>
-      <div className="relative">
+      <motion.div
+        className="relative"
+        animate={{
+          boxShadow: isFocused
+            ? '0 0 0 2px rgba(29, 226, 196, 0.15), 0 0 8px rgba(29, 226, 196, 0.1)'
+            : '0 0 0 0px rgba(29, 226, 196, 0), 0 0 0px rgba(29, 226, 196, 0)',
+        }}
+        transition={{ duration: 0.2 }}
+        style={{ borderRadius: '0.375rem' }}
+      >
         {prefix && (
           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-500 pointer-events-none">
             {prefix}
@@ -51,6 +63,8 @@ export function NumberInput({
           type="number"
           value={displayValue}
           onChange={handleChange}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           min={isPercent && min !== undefined ? min * 100 : min}
           max={isPercent && max !== undefined ? max * 100 : max}
           step={isPercent ? (step * 100) : step}
@@ -65,7 +79,7 @@ export function NumberInput({
             {suffix}
           </span>
         )}
-      </div>
+      </motion.div>
       {validation && (
         <p className={`text-xs ${validation.severity === 'error' ? 'text-red-400' : 'text-amber-400'}`}>
           {validation.message}

@@ -1,14 +1,17 @@
+import { AnimatePresence, motion } from 'motion/react';
 import { useCalculator } from '../state/context';
 import { HeroMetrics } from './HeroMetrics';
 import { TimelineTab } from './TimelineTab';
 import { BudgetTab } from './BudgetTab';
 import { CohortsTab } from './CohortsTab';
 import { DataTab } from './DataTab';
+import { SensitivityTab } from './SensitivityTab';
 
 const TABS = [
   { id: 'timeline' as const, label: 'Timeline' },
   { id: 'budget' as const, label: 'Budget' },
   { id: 'cohorts' as const, label: 'Cohorts' },
+  { id: 'sensitivity' as const, label: 'Sensitivity' },
   { id: 'data' as const, label: 'Data' },
 ];
 
@@ -36,7 +39,7 @@ export function Dashboard() {
       )}
 
       {/* Tab Bar */}
-      <div className="flex gap-1 mb-4 bg-gray-900 rounded-lg border border-gray-800 p-1 sticky top-0 z-10">
+      <div className="flex gap-1 mb-4 bg-gray-900 rounded-lg border border-gray-800 p-1 sticky top-0 z-10" role="tablist">
         {TABS.map(tab => (
           <button
             key={tab.id}
@@ -55,10 +58,21 @@ export function Dashboard() {
 
       {/* Tab Content */}
       <div role="tabpanel">
-        {activeTab === 'timeline' && <TimelineTab />}
-        {activeTab === 'budget' && <BudgetTab />}
-        {activeTab === 'cohorts' && <CohortsTab />}
-        {activeTab === 'data' && <DataTab />}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+          >
+            {activeTab === 'timeline' && <TimelineTab />}
+            {activeTab === 'budget' && <BudgetTab />}
+            {activeTab === 'cohorts' && <CohortsTab />}
+            {activeTab === 'sensitivity' && <SensitivityTab />}
+            {activeTab === 'data' && <DataTab />}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );
