@@ -373,6 +373,9 @@ function reducer(state: CalculatorState, action: Action): CalculatorState {
         profileId: 'abm',
         totalAccounts: 0,
         startQuarter: state.inputs.cohorts.length,
+        owner: '',
+        markets: [],
+        strategyType: 'cold',
       };
       const rawInputs = { ...state.inputs, cohorts: [...state.inputs.cohorts, newCohort] };
       return syncSolverFromInputs({ ...state, ...recalculate(rawInputs) });
@@ -388,7 +391,7 @@ function reducer(state: CalculatorState, action: Action): CalculatorState {
     case 'SET_COHORT_PROFILE': {
       const cohorts = state.inputs.cohorts.map(c =>
         c.id === action.cohortId
-          ? { ...c, profileId: action.profileId, conversionOverrides: undefined, velocityOverrides: undefined }
+          ? { ...c, profileId: action.profileId, strategyType: CAMPAIGN_PROFILES[action.profileId].category, conversionOverrides: undefined, velocityOverrides: undefined }
           : c
       );
       const rawInputs = { ...state.inputs, cohorts };
@@ -467,6 +470,13 @@ function reducer(state: CalculatorState, action: Action): CalculatorState {
       const rawInputs = JSON.parse(JSON.stringify(scenario.inputs));
       if (!rawInputs.userOverrides) rawInputs.userOverrides = {};
       if (rawInputs.advanced.quarterlyOnboardingCap == null) rawInputs.advanced.quarterlyOnboardingCap = 750;
+      // Migrate cohorts missing new fields
+      rawInputs.cohorts = rawInputs.cohorts.map((c: CohortDefinition) => ({
+        ...c,
+        strategyType: c.strategyType ?? CAMPAIGN_PROFILES[c.profileId].category,
+        owner: c.owner ?? '',
+        markets: c.markets ?? [],
+      }));
 
       // If scenario has solver state, restore it
       if (scenario.solverValues && scenario.solverLocks) {

@@ -23,6 +23,20 @@ export interface ConversionRates {
   oppToClose: number;
 }
 
+// Actuals data for a single quarter (future: populated via webhook/API from CRM)
+export interface CohortActuals {
+  quarter: number;
+  quarterLabel: string;
+  accountsInAction: number;
+  leadsConverted: number;
+  mqls: number;
+  opportunities: number;
+  closedWon: number;
+  revenue: number;
+  source: 'manual' | 'hubspot' | 'salesforce';
+  updatedAt: number;
+}
+
 // A single cohort of target accounts
 export interface CohortDefinition {
   id: string;
@@ -33,6 +47,10 @@ export interface CohortDefinition {
   accountsOverridden?: boolean; // true if user manually set totalAccounts
   conversionOverrides?: Partial<ConversionRates>;
   velocityOverrides?: Partial<VelocityDistribution>;
+  owner?: string;                        // founder/rep name tied to this cohort
+  markets?: string[];                    // market segments this cohort targets
+  strategyType: ProfileCategory;         // 'cold' | 'warm' — derived from profileId
+  actuals?: CohortActuals[];             // future: real data from CRM webhooks/API
 }
 
 // Frequency targeting configuration

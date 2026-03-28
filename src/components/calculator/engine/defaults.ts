@@ -1,6 +1,7 @@
 import type {
   CampaignProfile,
   CampaignProfileId,
+  ProfileCategory,
   CalculatorInputs,
   BudgetConfig,
   AdvancedConfig,
@@ -347,6 +348,12 @@ export const LOCK_PRESETS: LockPreset[] = [
   },
 ];
 
+// --- Strategy Type Helper ---
+
+export function getStrategyType(profileId: CampaignProfileId): ProfileCategory {
+  return CAMPAIGN_PROFILES[profileId].category;
+}
+
 // --- Default Scenario Inputs ---
 
 export function createDefaultInputs(): CalculatorInputs {
@@ -365,6 +372,9 @@ export function createDefaultInputs(): CalculatorInputs {
         profileId: 'abm',
         totalAccounts: initialAccounts,
         startQuarter: 0,
+        owner: '',
+        markets: [],
+        strategyType: 'cold',
       },
     ],
     budget: {

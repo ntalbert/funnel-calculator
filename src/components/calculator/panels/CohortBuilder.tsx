@@ -36,9 +36,43 @@ export function CohortBuilder() {
               )}
             </div>
 
+            {/* Owner */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium text-gray-400">Owner</label>
+              <input
+                type="text"
+                value={cohort.owner ?? ''}
+                onChange={(e) => dispatch({ type: 'SET_COHORT', cohortId: cohort.id, payload: { owner: e.target.value } })}
+                placeholder="e.g., founder name or rep"
+                className="w-full h-7 text-xs text-white rounded-md border border-gray-700 bg-gray-800 px-2 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-[#1de2c4]"
+              />
+            </div>
+
+            {/* Markets */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium text-gray-400">Markets</label>
+              <input
+                type="text"
+                value={(cohort.markets ?? []).join(', ')}
+                onChange={(e) => {
+                  const markets = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                  dispatch({ type: 'SET_COHORT', cohortId: cohort.id, payload: { markets } });
+                }}
+                placeholder="e.g., Healthcare, FinServ"
+                className="w-full h-7 text-xs text-white rounded-md border border-gray-700 bg-gray-800 px-2 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-[#1de2c4]"
+              />
+            </div>
+
             {/* Campaign Profile Selector — grouped by category */}
             <div className="space-y-2">
-              <label className="text-xs font-medium text-gray-300">Campaign Profile</label>
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-gray-300">Campaign Profile</label>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded-full border ${
+                  isWarm ? 'border-orange-400/60 text-orange-400' : 'border-blue-400/60 text-blue-400'
+                }`}>
+                  {isWarm ? 'Warm' : 'Cold'} Strategy
+                </span>
+              </div>
 
               {/* Cold profiles */}
               <div>
